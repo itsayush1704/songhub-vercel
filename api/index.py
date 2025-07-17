@@ -305,12 +305,6 @@ def handle_playlist_songs(playlist_name):
 def health_check():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
-# Vercel handler
-def handler(request):
-    return app(request.environ, lambda status, headers: None)
-
+# For Vercel deployment, the Flask app is automatically detected
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8009)))
-
-# Export the app for Vercel
-app = app
