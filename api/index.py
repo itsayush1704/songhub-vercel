@@ -7,9 +7,7 @@ import yt_dlp
 import json
 from datetime import datetime
 import pickle
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+# Removed numpy and scikit-learn imports to reduce function size
 from collections import defaultdict, Counter
 import hashlib
 import time

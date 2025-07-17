@@ -3,7 +3,5 @@ ytmusicapi==1.7.0
 python-dotenv==1.0.1
 yt-dlp==2024.4.9
 requests==2.32.3
-numpy==1.26.4
-scikit-learn==1.4.2
 flask-cors==4.0.1
 Werkzeug==3.0.3
