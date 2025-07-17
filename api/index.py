@@ -301,6 +301,87 @@ def handle_playlist_songs(playlist_name):
         
         return jsonify({'message': 'Song removed from playlist'})
 
+@app.route('/get_stream_url/<video_id>')
+def get_stream_url(video_id):
+    """Get streaming URL for a video"""
+    try:
+        # Configure yt-dlp options for audio streaming
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'noplaylist': True,
+            'quiet': True,
+            'no_warnings': True,
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(f'https://www.youtube.com/watch?v={video_id}', download=False)
+            
+            # Get the best audio format
+            formats = info.get('formats', [])
+            audio_url = None
+            
+            for fmt in formats:
+                if fmt.get('acodec') != 'none' and fmt.get('vcodec') == 'none':
+                    audio_url = fmt.get('url')
+                    break
+            
+            if not audio_url and formats:
+                audio_url = formats[0].get('url')
+            
+            return jsonify({
+                'url': audio_url,
+                'title': info.get('title', ''),
+                'duration': info.get('duration', 0)
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/top_charts')
+def get_top_charts():
+    """Get top charts/trending music"""
+    try:
+        trending_songs = get_trending_recommendations(20)
+        return jsonify(trending_songs)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/album/<album_id>')
+def get_album(album_id):
+    """Get album details"""
+    try:
+        album = ytmusic.get_album(album_id)
+        return jsonify(album)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/artist/<artist_id>')
+def get_artist(artist_id):
+    """Get artist details"""
+    try:
+        artist = ytmusic.get_artist(artist_id)
+        return jsonify(artist)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/playlist/<playlist_id>')
+def get_playlist(playlist_id):
+    """Get playlist details"""
+    try:
+        playlist = ytmusic.get_playlist(playlist_id)
+        return jsonify(playlist)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/playlists/<playlist_id>/songs')
+def get_playlist_songs(playlist_id):
+    """Get songs from a YouTube Music playlist"""
+    try:
+        playlist = ytmusic.get_playlist(playlist_id)
+        songs = playlist.get('tracks', [])
+        return jsonify(songs)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
