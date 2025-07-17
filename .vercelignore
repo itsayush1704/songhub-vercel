@@ -1,0 +1,73 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Data files
+*.pkl
+*.pickle
+
+# Test files
+tests/
+test_*.py
+*_test.py
+pytest.ini
+
+# Documentation
+*.md
+!README.md
+
+# Docker files
+Dockerfile
+docker-compose.yml
+
+# CI/CD
+.github/
+
+# Original app.py (we use api/index.py instead)
+app.py
+example_usage.py
+minimal_streaming_server.py
+streaming_fix.py
+test_*.py
+
+# Kotlin backend
+kotlin-streaming-backend/
