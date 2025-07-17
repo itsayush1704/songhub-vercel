@@ -227,79 +227,125 @@ def get_recommendations():
     try:
         if rec_type == 'content':
             recommendations = get_content_based_recommendations(user_id, limit)
+            personalization_level = 'high' if len(recommendations) > 5 else 'medium'
         elif rec_type == 'collaborative':
             recommendations = get_collaborative_recommendations(user_id, limit)
+            personalization_level = 'high' if len(recommendations) > 5 else 'medium'
         elif rec_type == 'trending':
             recommendations = get_trending_recommendations(limit)
+            personalization_level = 'low'
         else:  # mixed
             content_recs = get_content_based_recommendations(user_id, limit//3)
             collab_recs = get_collaborative_recommendations(user_id, limit//3)
             trending_recs = get_trending_recommendations(limit//3)
             recommendations = content_recs + collab_recs + trending_recs
+            personalization_level = 'medium'
         
-        return jsonify(recommendations)
+        # Add recommendation source to each song
+        for i, rec in enumerate(recommendations):
+            if not isinstance(rec, dict):
+                continue
+            if i < len(content_recs if rec_type == 'mixed' else []):
+                rec['recommendation_source'] = 'content_based'
+            elif i < len(content_recs) + len(collab_recs) if rec_type == 'mixed' else False:
+                rec['recommendation_source'] = 'collaborative'
+            else:
+                rec['recommendation_source'] = 'trending'
+        
+        return jsonify({
+            'status': 'success',
+            'recommendations': recommendations,
+            'personalization_level': personalization_level,
+            'recommendation_breakdown': {
+                'content_based': len([r for r in recommendations if r.get('recommendation_source') == 'content_based']),
+                'collaborative': len([r for r in recommendations if r.get('recommendation_source') == 'collaborative']),
+                'trending': len([r for r in recommendations if r.get('recommendation_source') == 'trending'])
+            }
+        })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/recently_played')
 def get_recently_played():
-    return jsonify(recently_played[-10:])  # Return last 10 songs
+    try:
+        recent_songs = recently_played[-10:]  # Return last 10 songs
+        return jsonify({
+            'status': 'success',
+            'recently_played': recent_songs
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/playlists', methods=['GET', 'POST'])
 def handle_playlists():
     user_id = get_user_id()
     
     if request.method == 'GET':
-        user_playlists = playlists.get(user_id, {})
-        return jsonify(user_playlists)
+        try:
+            user_playlists = playlists.get(user_id, {})
+            return jsonify({
+                'status': 'success',
+                'playlists': user_playlists
+            })
+        except Exception as e:
+            return jsonify({'status': 'error', 'error': str(e)}), 500
     
     elif request.method == 'POST':
-        data = request.get_json()
-        playlist_name = data.get('name')
-        
-        if not playlist_name:
-            return jsonify({'error': 'Playlist name is required'}), 400
-        
-        if user_id not in playlists:
-            playlists[user_id] = {}
-        
-        playlists[user_id][playlist_name] = {
-            'songs': [],
-            'created_at': datetime.now().isoformat()
-        }
-        
-        return jsonify({'message': 'Playlist created successfully'})
+        try:
+            data = request.get_json()
+            playlist_name = data.get('name')
+            
+            if not playlist_name:
+                return jsonify({'status': 'error', 'error': 'Playlist name is required'}), 400
+            
+            if user_id not in playlists:
+                playlists[user_id] = {}
+            
+            playlists[user_id][playlist_name] = {
+                'songs': [],
+                'created_at': datetime.now().isoformat()
+            }
+            
+            return jsonify({'status': 'success', 'message': 'Playlist created successfully'})
+        except Exception as e:
+            return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/playlists/<playlist_name>/songs', methods=['POST', 'DELETE'])
 def handle_playlist_songs(playlist_name):
     user_id = get_user_id()
     
     if user_id not in playlists or playlist_name not in playlists[user_id]:
-        return jsonify({'error': 'Playlist not found'}), 404
+        return jsonify({'status': 'error', 'error': 'Playlist not found'}), 404
     
     if request.method == 'POST':
-        data = request.get_json()
-        song = data.get('song')
-        
-        if not song:
-            return jsonify({'error': 'Song data is required'}), 400
-        
-        playlists[user_id][playlist_name]['songs'].append(song)
-        return jsonify({'message': 'Song added to playlist'})
+        try:
+            data = request.get_json()
+            song = data.get('song')
+            
+            if not song:
+                return jsonify({'status': 'error', 'error': 'Song data is required'}), 400
+            
+            playlists[user_id][playlist_name]['songs'].append(song)
+            return jsonify({'status': 'success', 'message': 'Song added to playlist'})
+        except Exception as e:
+            return jsonify({'status': 'error', 'error': str(e)}), 500
     
     elif request.method == 'DELETE':
-        data = request.get_json()
-        video_id = data.get('videoId')
-        
-        if not video_id:
-            return jsonify({'error': 'Video ID is required'}), 400
-        
-        songs = playlists[user_id][playlist_name]['songs']
-        playlists[user_id][playlist_name]['songs'] = [
-            song for song in songs if song.get('videoId') != video_id
-        ]
-        
-        return jsonify({'message': 'Song removed from playlist'})
+        try:
+            data = request.get_json()
+            video_id = data.get('videoId')
+            
+            if not video_id:
+                return jsonify({'status': 'error', 'error': 'Video ID is required'}), 400
+            
+            songs = playlists[user_id][playlist_name]['songs']
+            playlists[user_id][playlist_name]['songs'] = [
+                song for song in songs if song.get('videoId') != video_id
+            ]
+            
+            return jsonify({'status': 'success', 'message': 'Song removed from playlist'})
+        except Exception as e:
+            return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/get_stream_url/<video_id>')
 def get_stream_url(video_id):
@@ -341,9 +387,12 @@ def get_top_charts():
     """Get top charts/trending music"""
     try:
         trending_songs = get_trending_recommendations(20)
-        return jsonify(trending_songs)
+        return jsonify({
+            'status': 'success',
+            'top_charts': trending_songs
+        })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 @app.route('/album/<album_id>')
 def get_album(album_id):
